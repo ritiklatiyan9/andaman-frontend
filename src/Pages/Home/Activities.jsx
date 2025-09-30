@@ -9,7 +9,7 @@ import {
   Search, 
   MapPin, 
   Star, 
-  Calendar as CalendarIcon, 
+  Calendar, 
   Users, 
   X, 
   ChevronLeft, 
@@ -18,8 +18,7 @@ import {
   CheckCircle,
   AlertCircle,
   Filter,
-  Menu, // Add this for mobile menu if needed
-  X as CloseIcon // Lucide X icon for consistency
+  Menu
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,17 +49,17 @@ const Activities = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('upcoming'); // State for MyBookings tabs
+  const [activeTab, setActiveTab] = useState('upcoming');
   const [bookings, setBookings] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [view, setView] = useState('activities'); // New state: 'activities' or 'my-bookings'
-  const [myBookingsLoading, setMyBookingsLoading] = useState(false); // Loading state for MyBookings fetch
+  const [view, setView] = useState('activities');
+  const [myBookingsLoading, setMyBookingsLoading] = useState(false);
 
   const navigate = useNavigate();
 
   // Fetch activities
   useEffect(() => {
-    if (view !== 'activities') return; // Only fetch if viewing activities
+    if (view !== 'activities') return;
     const fetchActivities = async () => {
       try {
         setLoading(true);
@@ -70,7 +69,6 @@ const Activities = () => {
         
         if (!response.ok) {
           if (response.status === 401) {
-            // Handle unauthorized - redirect to login or show error
             console.error('Unauthorized access - please log in');
             setError('Please log in to view activities');
           } else {
@@ -82,7 +80,6 @@ const Activities = () => {
         const data = await response.json();
         setActivities(data.data?.activities || []);
         setFilteredActivities(data.data?.activities || []);
-        // Calculate total pages based on API pagination
         const total = data.data?.pagination?.total || data.data?.activities?.length || 0;
         setTotalPages(Math.ceil(total / 6));
       } catch (err) {
@@ -92,14 +89,14 @@ const Activities = () => {
       }
     };
     fetchActivities();
-  }, [view]); // Re-run when view changes
+  }, [view]);
 
-  // Fetch user bookings - Now only runs when view is 'my-bookings'
+  // Fetch user bookings
   useEffect(() => {
-    if (view !== 'my-bookings') return; // Only fetch if viewing bookings
+    if (view !== 'my-bookings') return;
     const fetchBookings = async () => {
       try {
-        setMyBookingsLoading(true); // Set loading state for bookings
+        setMyBookingsLoading(true);
         const token = localStorage.getItem('accessToken');
         if (!token) {
           console.error('No access token found');
@@ -114,7 +111,6 @@ const Activities = () => {
         if (!response.ok) {
           if (response.status === 401) {
             console.error('Unauthorized access - please log in');
-            // You might want to redirect here too
           } else {
             throw new Error(`Failed to fetch bookings: ${response.status}`);
           }
@@ -126,20 +122,19 @@ const Activities = () => {
         setBookings(data.data?.bookings || []);
       } catch (err) {
         console.error('Error fetching bookings:', err);
-        setError(err.message); // Set error for the bookings section too
+        setError(err.message);
       } finally {
         setMyBookingsLoading(false);
       }
     };
     fetchBookings();
-  }, [view]); // Re-run when view changes
+  }, [view]);
 
   // Apply filters and search for activities
   useEffect(() => {
-    if (view !== 'activities') return; // Only apply filters if viewing activities
+    if (view !== 'activities') return;
     let result = activities;
 
-    // Apply search
     if (searchQuery) {
       result = result.filter(activity => 
         activity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -147,7 +142,6 @@ const Activities = () => {
       );
     }
 
-    // Apply filters
     if (filters.category) {
       result = result.filter(activity => 
         activity.category.toLowerCase() === filters.category.toLowerCase()
@@ -166,7 +160,7 @@ const Activities = () => {
 
     setFilteredActivities(result);
     setTotalPages(Math.ceil(result.length / 6));
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   }, [searchQuery, filters, activities, view]);
 
   // Pagination for activities
@@ -221,7 +215,7 @@ const Activities = () => {
           activity_id: selectedActivity.activity_id,
           activity_date: data.date,
           participants_count: data.participants,
-          total_amount: selectedActivity.price * data.participants, // Calculate total
+          total_amount: selectedActivity.price * data.participants,
           special_requests: data.specialRequests
         })
       });
@@ -230,7 +224,6 @@ const Activities = () => {
         alert('Booking created successfully!');
         setShowBookingModal(false);
         reset();
-        // Optionally refresh the bookings list if currently viewing it
         if (view === 'my-bookings') {
             const updatedBookings = await (await fetch(`${API_BASE_URL}/api/activities/bookings`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -279,21 +272,14 @@ const Activities = () => {
     }
   };
 
-  // Function to switch view
   const switchToMyBookings = () => {
     setView('my-bookings');
-    // Optionally reset activity page if switching away
-    // setCurrentPage(1); 
   };
 
-  // Function to switch back to activities
   const switchToActivities = () => {
     setView('activities');
-    // Optionally reset booking tab if switching away
-    // setActiveTab('upcoming');
   };
 
-  // --- My Bookings Component Logic (Embedded) ---
   const filteredBookings = bookings.filter(booking => {
     if (activeTab === 'upcoming') return booking.booking_status === 'confirmed' || booking.booking_status === 'pending';
     if (activeTab === 'past') return booking.booking_status === 'completed';
@@ -316,13 +302,13 @@ const Activities = () => {
     );
 
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header with My Bookings Button */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">Activities</h2>
             <Button
-              onClick={switchToMyBookings} // Switch to My Bookings view
+              onClick={switchToMyBookings}
               variant="outline"
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
@@ -423,7 +409,6 @@ const Activities = () => {
           </div>
 
           {/* Activities List */}
-          {/* h2 moved to header */}
           {filteredActivities.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-gray-500">No activities found. Try adjusting your filters.</p>
@@ -552,7 +537,7 @@ const Activities = () => {
                 <div>
                   <label className="block text-sm font-medium mb-1">Date</label>
                   <div className="relative">
-                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <input
                       type="date"
                       {...register('date')}
@@ -608,7 +593,6 @@ const Activities = () => {
       </div>
     );
   } else if (view === 'my-bookings') {
-    // --- My Bookings View ---
     if (myBookingsLoading) return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -624,13 +608,13 @@ const Activities = () => {
     );
 
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header with Back Button */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">My Bookings</h1>
             <Button
-              onClick={switchToActivities} // Switch back to Activities view
+              onClick={switchToActivities}
               variant="outline"
               className="bg-gray-600 hover:bg-gray-700 text-white"
             >
@@ -701,7 +685,6 @@ const Activities = () => {
     );
   }
 
-  // Fallback render (should not happen with current logic)
   return null;
 };
 
@@ -731,6 +714,45 @@ export const ActivityDetail = ({ id }) => {
     fetchActivity();
   }, [id]);
 
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(bookingSchema)
+  });
+
+  const onSubmitBooking = async (data) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Please log in to make a booking');
+        return;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/activities/bookings`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          activity_id: activity.activity_id,
+          activity_date: data.date,
+          participants_count: data.participants,
+          total_amount: activity.price * data.participants,
+          special_requests: data.specialRequests
+        })
+      });
+
+      if (response.ok) {
+        alert('Booking created successfully!');
+        setShowBookingModal(false);
+      } else {
+        const error = await response.json();
+        alert(`Booking failed: ${error.message || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert('Network error occurred');
+    }
+  };
+
   if (loading) return (
     <div className="flex justify-center items-center h-64">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -747,7 +769,7 @@ export const ActivityDetail = ({ id }) => {
   if (!activity) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Button 
           variant="ghost" 
@@ -760,7 +782,7 @@ export const ActivityDetail = ({ id }) => {
         
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <img 
-            src={activity.photos?.[0] || ' https://placehold.co/1200x400?text=Activity+Image'} 
+            src={activity.photos?.[0] || 'https://placehold.co/1200x400?text=Activity+Image'} 
             alt={activity.name} 
             className="w-full h-96 object-cover"
           />
@@ -864,7 +886,7 @@ export const ActivityDetail = ({ id }) => {
               <div>
                 <label className="block text-sm font-medium mb-1">Date</label>
                 <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <input
                     type="date"
                     {...register('date')}
@@ -920,8 +942,5 @@ export const ActivityDetail = ({ id }) => {
     </div>
   );
 };
-
-// The MyBookings component is now embedded within the main Activities component.
-// export const MyBookings = () => { ... }; // This is no longer needed as a separate export
 
 export default Activities;
